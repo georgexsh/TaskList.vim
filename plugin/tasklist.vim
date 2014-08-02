@@ -134,10 +134,11 @@ endif
 function! s:OpenWindow(buffnr, lineno)
     " Open results window and place items there.
     if g:tlWindowPosition == 0
-      execute 'sp -TaskList_'.a:buffnr.'-'
+      execute '10sp -TaskList_'.a:buffnr.'-'
     else
-      execute 'botright sp -TaskList_'.a:buffnr.'-'
+      execute 'botright 10sp -TaskList_'.a:buffnr.'-'
     endif
+    normal! ggdG
 
     let b:original_buffnr = a:buffnr
     let b:original_line = a:lineno
@@ -240,7 +241,7 @@ function! s:UpdateDoc()
         normal! 1G
     else
         exe "normal! ".l:line_hit."Gzz"
-        exe 'match Search /\%'.line(".").'l.*/'
+        "exe 'match Search /\%'.line(".").'l.*/'
     endif
     execute bufwinnr('-TaskList_'.l:buffnr.'-')." wincmd w"
     redraw
@@ -275,6 +276,18 @@ function! s:Exit(key)
     normal! zz
 
     execute "set updatetime=".s:old_updatetime
+endfunction
+
+
+function! s:Jump()
+    if stridx(expand("%:t"), '-TaskList_') == -1
+        return
+    endif
+    if b:selected_line != line(".")
+        call <sid>UpdateDoc()
+        let b:selected_line = line(".")
+    endif
+    execute bufwinnr(b:original_buffnr)." wincmd w"
 endfunction
 
 " Function: Check for screen update {{{1
@@ -337,8 +350,8 @@ function! s:TaskList()
 
     " Map exit keys
     nnoremap <buffer> <silent> q :call <sid>Exit(0)<cr>
-    nnoremap <buffer> <silent> <cr> :call <sid>Exit(1)<cr>
     nnoremap <buffer> <silent> e :call <sid>Exit(-1)<cr>
+    nnoremap <buffer> <silent> <cr> :call <sid>Jump()<cr>
 
     " Setup syntax highlight {{{
     syntax match tasklistFileDivider       /^File:.*$/
@@ -356,7 +369,7 @@ function! s:TaskList()
 
     " update the doc and hook the CheckForUpdate function.
     call <sid>UpdateDoc()
-    au! CursorHold <buffer> nested call <sid>CheckForUpdate()
+    "au! CursorHold <buffer> nested call <sid>CheckForUpdate()
 
 endfunction
 "}}}
@@ -364,12 +377,12 @@ endfunction
 " Command
 command! TaskList call s:TaskList()
 
-" Default key map
-if !hasmapto('<Plug>TaskList')
-    map <unique> <Leader>t <Plug>TaskList
-endif
-
 " Key map to Command
 nnoremap <unique> <script> <Plug>TaskList :TaskList<CR>
+
+" Default key map
+"if !hasmapto('<Plug>TaskList')
+    "map <unique> <Leader>t <Plug>TaskList
+"endif
 
 " vim:fdm=marker:tw=75:ff=unix:
